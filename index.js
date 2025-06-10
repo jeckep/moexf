@@ -1,4 +1,4 @@
-export async function fetchMonthlyFunding(monthCount = 12, ticker = 'CNYRUBF') {
+export async function fetchMonthlyFundingWithRolling(monthCount = 12, ticker = 'CNYRUBF') {
   async function fetchAllRowsMoexForts(from, till, chunkMonths = 4) {
     let rows = [];
     let currentFrom = new Date(from);
@@ -31,11 +31,12 @@ export async function fetchMonthlyFunding(monthCount = 12, ticker = 'CNYRUBF') {
   const settlePriceIdx = columns.indexOf('SETTLEPRICE');
   const swapRateIdx = columns.indexOf('SWAPRATE');
 
-  // Месяцы от текущего назад
+  // Расчетный диапазон: на (monthCount + 12) месяцев назад
   const now = new Date();
   now.setHours(0, 0, 0, 0);
+  const totalMonths = monthCount + 12;
   const months = [];
-  for (let i = 0; i < monthCount; ++i) {
+  for (let i = 0; i < totalMonths; ++i) {
     const month = new Date(now.getFullYear(), now.getMonth() - i, 1);
     months.push(month);
   }
@@ -48,9 +49,9 @@ export async function fetchMonthlyFunding(monthCount = 12, ticker = 'CNYRUBF') {
 
   // Для каждого месяца считаем фандинг отдельно
   const monthly = [];
-  for (let i = 0; i < months.length; ++i) {
+  for (let i = 0; i < months.length - 1; ++i) {
     const monthStart = months[i];
-    const nextMonthStart = i > 0 ? months[i-1] : new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const nextMonthStart = months[i - 1] || new Date(now.getFullYear(), now.getMonth() + 1, 1);
     const from = monthStart.toISOString().slice(0, 10);
     const till = new Date(nextMonthStart - 1).toISOString().slice(0, 10);
 
@@ -75,5 +76,22 @@ export async function fetchMonthlyFunding(monthCount = 12, ticker = 'CNYRUBF') {
       percent: Number(percent.toFixed(3))
     });
   }
-  return monthly;
+  // monthly[0] — самый старый месяц, monthly.at(-1) — самый свежий
+
+  // Скользящая годовая сумма: для каждого месяца из последних monthCount месяцев
+  const rolling = [];
+  for (let i = monthly.length - monthCount; i < monthly.length; ++i) {
+    // Берём сумму percent по 12 месяцам, заканчиваясь на i
+    let sum = 0;
+    let label = monthly[i].month;
+    for (let k = 0; k < 12; ++k) {
+      if ((i - k) >= 0) sum += monthly[i - k].percent;
+    }
+    rolling.push({ month: label, yearSum: Number(sum.toFixed(3)) });
+  }
+
+  // Оставляем для отображения только последние monthCount месяцев
+  const monthlyLast = monthly.slice(-monthCount);
+
+  return { monthly: monthlyLast, rolling };
 }
