@@ -1,4 +1,4 @@
-export async function fetchMonthlyFundingWithRolling(monthCount = 12, ticker = 'CNYRUBF') {
+export async function fetchMonthlyFundingWithCalendarRolling(monthCount = 12, ticker = 'CNYRUBF') {
   async function fetchAllRowsMoexForts(from, till, chunkMonths = 4) {
     let rows = [];
     let currentFrom = new Date(from);
@@ -22,7 +22,7 @@ export async function fetchMonthlyFundingWithRolling(monthCount = 12, ticker = '
     return rows;
   }
 
-  // Получаем индексы (разово)
+  // Получаем индексы
   const sampleUrl = `https://iss.moex.com/iss/history/engines/futures/markets/forts/securities/${ticker}.json?from=2025-01-01&till=2025-01-10`;
   const sampleResp = await fetch(sampleUrl);
   const sampleData = await sampleResp.json();
@@ -31,7 +31,7 @@ export async function fetchMonthlyFundingWithRolling(monthCount = 12, ticker = '
   const settlePriceIdx = columns.indexOf('SETTLEPRICE');
   const swapRateIdx = columns.indexOf('SWAPRATE');
 
-  // Расчетный диапазон: на (monthCount + 12) месяцев назад
+  // Нужен диапазон: месяцев для rolling + месяцев для отображения
   const now = new Date();
   now.setHours(0, 0, 0, 0);
   const totalMonths = monthCount + 12;
@@ -44,11 +44,11 @@ export async function fetchMonthlyFundingWithRolling(monthCount = 12, ticker = '
   const fromStr = earliest.toISOString().slice(0, 10);
   const tillStr = now.toISOString().slice(0, 10);
 
-  // Получаем все строки (по месяцам)
+  // Все дневные строки
   const allRows = await fetchAllRowsMoexForts(fromStr, tillStr, 4);
 
-  // Для каждого месяца считаем фандинг отдельно
-  const monthly = [];
+  // Группируем по месяцам
+  const monthsData = [];
   for (let i = 0; i < months.length - 1; ++i) {
     const monthStart = months[i];
     const nextMonthStart = months[i - 1] || new Date(now.getFullYear(), now.getMonth() + 1, 1);
@@ -59,7 +59,7 @@ export async function fetchMonthlyFundingWithRolling(monthCount = 12, ticker = '
         row[tradeDateIdx] >= from && row[tradeDateIdx] <= till
     );
     if (!rows.length) {
-      monthly.unshift({
+      monthsData.unshift({
         month: monthStart.toLocaleString('ru-RU', { month: 'short', year: '2-digit' }),
         percent: 0
       });
@@ -71,27 +71,27 @@ export async function fetchMonthlyFundingWithRolling(monthCount = 12, ticker = '
       sumSwap += row[swapRateIdx];
     }
     const percent = (sumSwap / firstSettle) * 100;
-    monthly.unshift({
+    monthsData.unshift({
       month: monthStart.toLocaleString('ru-RU', { month: 'short', year: '2-digit' }),
       percent: Number(percent.toFixed(3))
     });
   }
-  // monthly[0] — самый старый месяц, monthly.at(-1) — самый свежий
 
-  // Скользящая годовая сумма: для каждого месяца из последних monthCount месяцев
+  // Для графика bar — последние N месяцев
+  const monthlyLast = monthsData.slice(-monthCount);
+
+  // Для графика rolling — для каждой точки суммируем percent за 12 предыдущих месяцев
   const rolling = [];
-  for (let i = monthly.length - monthCount; i < monthly.length; ++i) {
-    // Берём сумму percent по 12 месяцам, заканчиваясь на i
+  for (let i = monthsData.length - monthCount; i < monthsData.length; ++i) {
     let sum = 0;
-    let label = monthly[i].month;
     for (let k = 0; k < 12; ++k) {
-      if ((i - k) >= 0) sum += monthly[i - k].percent;
+      if ((i - k) >= 0) sum += monthsData[i - k].percent;
     }
-    rolling.push({ month: label, yearSum: Number(sum.toFixed(3)) });
+    rolling.push({
+      month: monthsData[i].month,
+      yearSum: Number(sum.toFixed(3))
+    });
   }
-
-  // Оставляем для отображения только последние monthCount месяцев
-  const monthlyLast = monthly.slice(-monthCount);
 
   return { monthly: monthlyLast, rolling };
 }

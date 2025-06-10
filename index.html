@@ -43,7 +43,7 @@
     <div class="note">Положительное значение: лонги платят шортам.<br>Отрицательное: шорты платят лонгам.</div>
 </div>
 <script type="module">
-    import { fetchMonthlyFundingWithRolling } from './index.js';
+    import { fetchMonthlyFundingWithCalendarRolling } from './index.js';
 
     const chartElem = document.getElementById('fundingChart');
     const rollingElem = document.getElementById('rollingChart');
@@ -61,7 +61,7 @@
         try {
             const months = Number(monthCountInput.value) || 12;
             const ticker = tickerSelect.value;
-            const { monthly, rolling } = await fetchMonthlyFundingWithRolling(months, ticker);
+            const { monthly, rolling } = await fetchMonthlyFundingWithCalendarRolling(months, ticker);
 
             // -- График 1: месячный фандинг (столбцы) --
             const labels = monthly.map(m => m.month);
