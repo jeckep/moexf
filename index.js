@@ -22,7 +22,7 @@ export async function fetchMonthlyFundingWithCalendarRolling(monthCount = 12, ti
     return rows;
   }
 
-  // Получаем индексы
+  // Получаем индексы столбцов
   const sampleUrl = `https://iss.moex.com/iss/history/engines/futures/markets/forts/securities/${ticker}.json?from=2025-01-01&till=2025-01-10`;
   const sampleResp = await fetch(sampleUrl);
   const sampleData = await sampleResp.json();
@@ -31,7 +31,7 @@ export async function fetchMonthlyFundingWithCalendarRolling(monthCount = 12, ti
   const settlePriceIdx = columns.indexOf('SETTLEPRICE');
   const swapRateIdx = columns.indexOf('SWAPRATE');
 
-  // Нужен диапазон: месяцев для rolling + месяцев для отображения
+  // Даты, которые нужно покрыть
   const now = new Date();
   now.setHours(0, 0, 0, 0);
   const totalMonths = monthCount + 12;
@@ -44,10 +44,10 @@ export async function fetchMonthlyFundingWithCalendarRolling(monthCount = 12, ti
   const fromStr = earliest.toISOString().slice(0, 10);
   const tillStr = now.toISOString().slice(0, 10);
 
-  // Все дневные строки
+  // Загружаем все строки
   const allRows = await fetchAllRowsMoexForts(fromStr, tillStr, 4);
 
-  // Группируем по месяцам
+  // --- Для месячного графика (баров) ---
   const monthsData = [];
   for (let i = 0; i < months.length - 1; ++i) {
     const monthStart = months[i];
@@ -77,21 +77,41 @@ export async function fetchMonthlyFundingWithCalendarRolling(monthCount = 12, ti
     });
   }
 
-  // Для графика bar — последние N месяцев
   const monthlyLast = monthsData.slice(-monthCount);
 
-  // Для графика rolling — для каждой точки суммируем percent за 12 предыдущих месяцев
-  const rolling = [];
-  for (let i = monthsData.length - monthCount; i < monthsData.length; ++i) {
-    let sum = 0;
-    for (let k = 0; k < 12; ++k) {
-      if ((i - k) >= 0) sum += monthsData[i - k].percent;
-    }
-    rolling.push({
-      month: monthsData[i].month,
+  // --- Для дневного rolling-графика ---
+  const dailyData = [];
+  for (const row of allRows) {
+    const tradeDate = row[tradeDateIdx];
+    const settlePrice = row[settlePriceIdx];
+    const swapRate = row[swapRateIdx];
+    if (!settlePrice || !swapRate) continue;
+    const percent = (swapRate / settlePrice) * 100;
+    dailyData.push({ date: tradeDate, percent });
+  }
+
+  // Сортировка на всякий случай
+  dailyData.sort((a, b) => a.date.localeCompare(b.date));
+
+  // Скользящая сумма за 12 месяцев
+  const rollingDaily = [];
+  const oneYearAgo = date => {
+    const d = new Date(date);
+    d.setFullYear(d.getFullYear() - 1);
+    return d.toISOString().slice(0, 10);
+  };
+
+  for (let i = 0; i < dailyData.length; ++i) {
+    const currentDate = dailyData[i].date;
+    const startDate = oneYearAgo(currentDate);
+    const sum = dailyData
+        .filter(d => d.date >= startDate && d.date <= currentDate)
+        .reduce((acc, d) => acc + d.percent, 0);
+    rollingDaily.push({
+      date: currentDate,
       yearSum: Number(sum.toFixed(3))
     });
   }
 
-  return { monthly: monthlyLast, rolling };
+  return { monthly: monthlyLast, rolling: rollingDaily };
 }

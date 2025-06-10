@@ -63,20 +63,11 @@
             const ticker = tickerSelect.value;
             const { monthly, rolling } = await fetchMonthlyFundingWithCalendarRolling(months, ticker);
 
-            // -- График 1: месячный фандинг (столбцы) --
+            // --- График 1: месячный фандинг ---
             const labels = monthly.map(m => m.month);
             const percents = monthly.map(m => m.percent);
 
-            // -- График 2: годовая скользящая сумма (линия) --
-            const rollingVals = rolling.map(m => m.yearSum);
-
-            spinner.style.display = 'none';
-            chartElem.style.display = 'block';
-            rollingElem.style.display = 'block';
-
             if (chart) chart.destroy();
-            if (rollingChart) rollingChart.destroy();
-
             const ctx = chartElem.getContext('2d');
             chart = new Chart(ctx, {
                 type: 'bar',
@@ -119,19 +110,22 @@
                 }
             });
 
-            // --- Линейный график: скользящая годовая сумма ---
+            // --- График 2: годовая сумма по дням ---
+            const rollingLabels = rolling.map(r => r.date);
+            const rollingVals = rolling.map(r => r.yearSum);
+
+            if (rollingChart) rollingChart.destroy();
             const ctx2 = rollingElem.getContext('2d');
             rollingChart = new Chart(ctx2, {
                 type: 'line',
                 data: {
-                    labels,
+                    labels: rollingLabels,
                     datasets: [{
                         label: 'Сумма фандинга за 12 мес, %',
                         data: rollingVals,
                         borderColor: '#4f46e5',
                         backgroundColor: 'rgba(79,70,229,0.15)',
-                        pointRadius: 3,
-                        pointBackgroundColor: '#fff',
+                        pointRadius: 0,
                         tension: 0.15,
                         fill: true
                     }]
@@ -160,11 +154,19 @@
                         },
                         x: {
                             grid: { color: '#232336' },
-                            ticks: { color: '#fff' }
+                            ticks: {
+                                color: '#fff',
+                                maxTicksLimit: 10, // ограничим число подписей по X
+                                autoSkip: true
+                            }
                         }
                     }
                 }
             });
+
+            spinner.style.display = 'none';
+            chartElem.style.display = 'block';
+            rollingElem.style.display = 'block';
 
         } catch (err) {
             spinner.textContent = 'Ошибка загрузки: ' + err;
