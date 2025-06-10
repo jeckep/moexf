@@ -53,6 +53,20 @@
     const refreshBtn = document.getElementById('refresh');
     let chart, rollingChart;
 
+    const watermarkPlugin = {
+        id: 'watermark',
+        afterDraw(chart) {
+            const { ctx, chartArea: { right, top } } = chart;
+            ctx.save();
+            ctx.font = '20px sans-serif';
+            ctx.fillStyle = 'rgba(157,194,70,0.83)';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'top';
+            ctx.fillText('t-calc.ru', right - 10, top + 10);
+            ctx.restore();
+        }
+    };
+
     async function renderChart() {
         chartElem.style.display = 'none';
         rollingElem.style.display = 'none';
@@ -63,7 +77,6 @@
             const ticker = tickerSelect.value;
             const { monthly, rolling } = await fetchMonthlyFundingWithCalendarRolling(months, ticker);
 
-            // --- График 1: месячный фандинг (bar) ---
             const labels = monthly.map(m => m.month);
             const percents = monthly.map(m => m.percent);
 
@@ -96,7 +109,6 @@
                                 bottom: 15
                             }
                         },
-
                         legend: { display: false },
                         tooltip: {
                             callbacks: {
@@ -117,10 +129,10 @@
                             ticks: { color: '#fff' }
                         }
                     }
-                }
+                },
+                plugins: [watermarkPlugin]
             });
 
-            // --- График 2: скользящий фандинг по дням (line) ---
             const rollingLabels = rolling.map(r => r.date);
             const rollingVals = rolling.map(r => r.yearSum);
 
@@ -156,7 +168,6 @@
                                 bottom: 15
                             }
                         },
-
                         legend: { display: false },
                         tooltip: {
                             callbacks: {
@@ -181,7 +192,8 @@
                             }
                         }
                     }
-                }
+                },
+                plugins: [watermarkPlugin]
             });
 
             spinner.style.display = 'none';
