@@ -8,7 +8,7 @@
         body { background: #18181b; color: #fff; font-family: sans-serif; }
         .wrapper { max-width: 680px; margin: 2em auto; background: #232336; padding: 2em; border-radius: 16px; }
         h1 { font-size: 1.5em; text-align: center; }
-        .note { margin-top: 1em; font-size: 0.9em; color: #bbb; text-align: center; }
+        .note { margin-top: 1em; font-size: 1.5em; color: #bbb; text-align: center; }
         #spinner { text-align:center; padding: 1.5em 0; }
         #controls { text-align:center; margin-bottom:1em; }
         input[type="number"] { width:3em; padding:0.2em; border-radius:6px; border:none; background:#18181b; color:#fff; text-align:center; }
@@ -85,8 +85,18 @@
                     plugins: {
                         title: {
                             display: true,
-                            text: 'Месячный фандинг, %'
+                            text: 'Месячный фандинг, %',
+                            color: '#fff',
+                            font: {
+                                size: 20,
+                                weight: 'bold'
+                            },
+                            padding: {
+                                top: 10,
+                                bottom: 15
+                            }
                         },
+
                         legend: { display: false },
                         tooltip: {
                             callbacks: {
@@ -135,8 +145,18 @@
                     plugins: {
                         title: {
                             display: true,
-                            text: 'Годовая скользящая сумма фандинга, %'
+                            text: 'Годовая скользящая сумма фандинга, %',
+                            color: '#fff',
+                            font: {
+                                size: 20,
+                                weight: 'bold'
+                            },
+                            padding: {
+                                top: 10,
+                                bottom: 15
+                            }
                         },
+
                         legend: { display: false },
                         tooltip: {
                             callbacks: {
