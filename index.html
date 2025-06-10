@@ -17,6 +17,8 @@
         button:active { background: #312e81; }
         canvas { background: #232336; margin-bottom: 1.8em; }
         select { padding: 0.2em 0.7em; border-radius:6px; background:#18181b; color:#fff; border:none; }
+        .save-buttons { text-align:center; margin-top: -1.2em; margin-bottom: 1.8em; }
+        .save-buttons button { margin: 0.2em; }
     </style>
 </head>
 <body>
@@ -26,9 +28,9 @@
         <label>
             Фьючерс:
             <select id="ticker">
-                <option value="CNYRUBF">CNY/RUB</option>
-                <option value="USDRUBF">USD/RUB</option>
-                <option value="EURRUBF">EUR/RUB</option>
+                <option value="CNYRUBF">CNYRUBF</option>
+                <option value="USDRUBF">USDRUBF</option>
+                <option value="EURRUBF">EURRUBF</option>
             </select>
         </label>
         <label style="margin-left:1em;">
@@ -38,10 +40,20 @@
         <button id="refresh">Показать</button>
     </div>
     <div id="spinner">Загрузка данных...</div>
+
     <canvas id="fundingChart" height="300" style="display:none;"></canvas>
+    <div class="save-buttons" id="saveFundingButtons" style="display:none;">
+        <button onclick="saveChart('fundingChart', 'monthly_funding')">Скачать месячный график</button>
+    </div>
+
     <canvas id="rollingChart" height="280" style="display:none;"></canvas>
+    <div class="save-buttons" id="saveRollingButtons" style="display:none;">
+        <button onclick="saveChart('rollingChart', 'rolling_funding')">Скачать годовой график</button>
+    </div>
+
     <div class="note">Положительное значение: лонги платят шортам.<br>Отрицательное: шорты платят лонгам.</div>
 </div>
+
 <script type="module">
     import { fetchMonthlyFundingWithCalendarRolling } from './index.js';
 
@@ -51,6 +63,9 @@
     const monthCountInput = document.getElementById('monthCount');
     const tickerSelect = document.getElementById('ticker');
     const refreshBtn = document.getElementById('refresh');
+    const saveFundingButtons = document.getElementById('saveFundingButtons');
+    const saveRollingButtons = document.getElementById('saveRollingButtons');
+
     let chart, rollingChart;
 
     const watermarkPlugin = {
@@ -70,19 +85,21 @@
     async function renderChart() {
         chartElem.style.display = 'none';
         rollingElem.style.display = 'none';
+        saveFundingButtons.style.display = 'none';
+        saveRollingButtons.style.display = 'none';
         spinner.textContent = 'Загрузка данных...';
         spinner.style.display = 'block';
         try {
             const months = Number(monthCountInput.value) || 12;
             const ticker = tickerSelect.value;
+            const tickerText = tickerSelect.options[tickerSelect.selectedIndex].text;
             const { monthly, rolling } = await fetchMonthlyFundingWithCalendarRolling(months, ticker);
 
             const labels = monthly.map(m => m.month);
             const percents = monthly.map(m => m.percent);
 
             if (chart) chart.destroy();
-            const ctx = chartElem.getContext('2d');
-            chart = new Chart(ctx, {
+            chart = new Chart(chartElem.getContext('2d'), {
                 type: 'bar',
                 data: {
                     labels,
@@ -98,16 +115,13 @@
                     plugins: {
                         title: {
                             display: true,
-                            text: 'Месячный фандинг, %',
+                            text: `Месячный фандинг, % (${tickerText})`,
                             color: '#fff',
                             font: {
                                 size: 20,
                                 weight: 'bold'
                             },
-                            padding: {
-                                top: 10,
-                                bottom: 15
-                            }
+                            padding: { top: 10, bottom: 15 }
                         },
                         legend: { display: false },
                         tooltip: {
@@ -119,10 +133,7 @@
                     scales: {
                         y: {
                             grid: { color: '#333' },
-                            ticks: {
-                                color: '#fff',
-                                callback: value => value + '%'
-                            }
+                            ticks: { color: '#fff', callback: v => v + '%' }
                         },
                         x: {
                             grid: { color: '#232336' },
@@ -137,8 +148,7 @@
             const rollingVals = rolling.map(r => r.yearSum);
 
             if (rollingChart) rollingChart.destroy();
-            const ctx2 = rollingElem.getContext('2d');
-            rollingChart = new Chart(ctx2, {
+            rollingChart = new Chart(rollingElem.getContext('2d'), {
                 type: 'line',
                 data: {
                     labels: rollingLabels,
@@ -157,16 +167,13 @@
                     plugins: {
                         title: {
                             display: true,
-                            text: 'Годовая скользящая сумма фандинга, %',
+                            text: `Годовая скользящая сумма фандинга, % (${tickerText})`,
                             color: '#fff',
                             font: {
                                 size: 20,
                                 weight: 'bold'
                             },
-                            padding: {
-                                top: 10,
-                                bottom: 15
-                            }
+                            padding: { top: 10, bottom: 15 }
                         },
                         legend: { display: false },
                         tooltip: {
@@ -178,18 +185,11 @@
                     scales: {
                         y: {
                             grid: { color: '#333' },
-                            ticks: {
-                                color: '#fff',
-                                callback: value => value + '%'
-                            }
+                            ticks: { color: '#fff', callback: v => v + '%' }
                         },
                         x: {
                             grid: { color: '#232336' },
-                            ticks: {
-                                color: '#fff',
-                                maxTicksLimit: 10,
-                                autoSkip: true
-                            }
+                            ticks: { color: '#fff', maxTicksLimit: 10, autoSkip: true }
                         }
                     }
                 },
@@ -199,6 +199,8 @@
             spinner.style.display = 'none';
             chartElem.style.display = 'block';
             rollingElem.style.display = 'block';
+            saveFundingButtons.style.display = 'block';
+            saveRollingButtons.style.display = 'block';
 
         } catch (err) {
             spinner.textContent = 'Ошибка загрузки: ' + err;
@@ -211,6 +213,14 @@
     tickerSelect.onchange = renderChart;
     monthCountInput.onchange = renderChart;
     renderChart();
+
+    window.saveChart = function(canvasId, filename) {
+        const canvas = document.getElementById(canvasId);
+        const link = document.createElement('a');
+        link.download = filename + '.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    };
 </script>
 </body>
 </html>
