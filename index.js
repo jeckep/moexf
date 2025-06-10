@@ -1,6 +1,5 @@
-// index.js
-export async function fetchMonthlyFunding(monthCount = 12) {
-  async function fetchAllRowsCNYRUBF(from, till, chunkMonths = 4) {
+export async function fetchMonthlyFunding(monthCount = 12, ticker = 'CNYRUBF') {
+  async function fetchAllRowsMoexForts(from, till, chunkMonths = 4) {
     let rows = [];
     let currentFrom = new Date(from);
     let tillDate = new Date(till);
@@ -10,7 +9,7 @@ export async function fetchMonthlyFunding(monthCount = 12) {
       if (currentTill > tillDate) currentTill = tillDate;
       const fStr = currentFrom.toISOString().slice(0, 10);
       const tStr = currentTill.toISOString().slice(0, 10);
-      const url = `https://iss.moex.com/iss/history/engines/futures/markets/forts/securities/CNYRUBF.json?from=${fStr}&till=${tStr}`;
+      const url = `https://iss.moex.com/iss/history/engines/futures/markets/forts/securities/${ticker}.json?from=${fStr}&till=${tStr}`;
       const resp = await fetch(url);
       if (!resp.ok) throw new Error('Ошибка загрузки: ' + url);
       const data = await resp.json();
@@ -24,7 +23,7 @@ export async function fetchMonthlyFunding(monthCount = 12) {
   }
 
   // Получаем индексы (разово)
-  const sampleUrl = 'https://iss.moex.com/iss/history/engines/futures/markets/forts/securities/CNYRUBF.json?from=2025-01-01&till=2025-01-10';
+  const sampleUrl = `https://iss.moex.com/iss/history/engines/futures/markets/forts/securities/${ticker}.json?from=2025-01-01&till=2025-01-10`;
   const sampleResp = await fetch(sampleUrl);
   const sampleData = await sampleResp.json();
   const columns = sampleData.history.columns;
@@ -45,7 +44,7 @@ export async function fetchMonthlyFunding(monthCount = 12) {
   const tillStr = now.toISOString().slice(0, 10);
 
   // Получаем все строки (по месяцам)
-  const allRows = await fetchAllRowsCNYRUBF(fromStr, tillStr, 4);
+  const allRows = await fetchAllRowsMoexForts(fromStr, tillStr, 4);
 
   // Для каждого месяца считаем фандинг отдельно
   const monthly = [];

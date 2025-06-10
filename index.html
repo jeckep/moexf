@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Месячный фандинг CNYRUBF (MOEX)</title>
+    <title>Месячный фандинг (MOEX)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { background: #18181b; color: #fff; font-family: sans-serif; }
@@ -16,13 +16,23 @@
         button { background: #4f46e5; color: #fff; border: none; border-radius: 8px; padding: 0.3em 1.5em; font-size: 1em; margin-left: 1em; cursor:pointer; }
         button:active { background: #312e81; }
         canvas { background: #232336; }
+        select { padding: 0.2em 0.7em; border-radius:6px; background:#18181b; color:#fff; border:none; }
     </style>
 </head>
 <body>
 <div class="wrapper">
-    <h1>Месячный фандинг<br><span style="font-size:0.8em;">CNYRUBF, MOEX</span></h1>
+    <h1>Месячный фандинг<br><span style="font-size:0.8em;">MOEX Forts</span></h1>
     <div id="controls">
-        <label>Число месяцев:
+        <label>
+            Фьючерс:
+            <select id="ticker">
+                <option value="CNYRUBF">CNY/RUB</option>
+                <option value="USDRUBF">USD/RUB</option>
+                <option value="EURRUBF">EUR/RUB</option>
+            </select>
+        </label>
+        <label style="margin-left:1em;">
+            Число месяцев:
             <input id="monthCount" type="number" value="12" min="1" max="36" />
         </label>
         <button id="refresh">Показать</button>
@@ -37,6 +47,7 @@
     const chartElem = document.getElementById('fundingChart');
     const spinner = document.getElementById('spinner');
     const monthCountInput = document.getElementById('monthCount');
+    const tickerSelect = document.getElementById('ticker');
     const refreshBtn = document.getElementById('refresh');
     let chart;
 
@@ -46,7 +57,8 @@
         spinner.style.display = 'block';
         try {
             const months = Number(monthCountInput.value) || 12;
-            const monthly = await fetchMonthlyFunding(months);
+            const ticker = tickerSelect.value;
+            const monthly = await fetchMonthlyFunding(months, ticker);
 
             const labels = monthly.map(m => m.month);
             const percents = monthly.map(m => m.percent);
@@ -100,6 +112,10 @@
 
     refreshBtn.onclick = renderChart;
     renderChart();
+
+    // Можно обновлять автоматически при смене селектора
+    tickerSelect.onchange = renderChart;
+    monthCountInput.onchange = renderChart;
 </script>
 </body>
 </html>
