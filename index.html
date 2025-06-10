@@ -63,7 +63,7 @@
             const ticker = tickerSelect.value;
             const { monthly, rolling } = await fetchMonthlyFundingWithCalendarRolling(months, ticker);
 
-            // --- График 1: месячный фандинг ---
+            // --- График 1: месячный фандинг (bar) ---
             const labels = monthly.map(m => m.month);
             const percents = monthly.map(m => m.percent);
 
@@ -110,7 +110,7 @@
                 }
             });
 
-            // --- График 2: годовая сумма по дням ---
+            // --- График 2: скользящий фандинг по дням (line) ---
             const rollingLabels = rolling.map(r => r.date);
             const rollingVals = rolling.map(r => r.yearSum);
 
@@ -156,7 +156,7 @@
                             grid: { color: '#232336' },
                             ticks: {
                                 color: '#fff',
-                                maxTicksLimit: 10, // ограничим число подписей по X
+                                maxTicksLimit: 10,
                                 autoSkip: true
                             }
                         }

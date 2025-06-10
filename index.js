@@ -22,7 +22,7 @@ export async function fetchMonthlyFundingWithCalendarRolling(monthCount = 12, ti
     return rows;
   }
 
-  // Получаем индексы столбцов
+  // Получаем индексы
   const sampleUrl = `https://iss.moex.com/iss/history/engines/futures/markets/forts/securities/${ticker}.json?from=2025-01-01&till=2025-01-10`;
   const sampleResp = await fetch(sampleUrl);
   const sampleData = await sampleResp.json();
@@ -31,33 +31,31 @@ export async function fetchMonthlyFundingWithCalendarRolling(monthCount = 12, ti
   const settlePriceIdx = columns.indexOf('SETTLEPRICE');
   const swapRateIdx = columns.indexOf('SWAPRATE');
 
-  // Даты, которые нужно покрыть
+  // Все нужные даты — от today - (monthCount + 12) месяцев
   const now = new Date();
   now.setHours(0, 0, 0, 0);
-  const totalMonths = monthCount + 12;
-  const months = [];
-  for (let i = 0; i < totalMonths; ++i) {
-    const month = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    months.push(month);
-  }
-  const earliest = months[months.length - 1];
-  const fromStr = earliest.toISOString().slice(0, 10);
+  const start = new Date(now);
+  start.setMonth(start.getMonth() - (monthCount + 12));
+  const fromStr = start.toISOString().slice(0, 10);
   const tillStr = now.toISOString().slice(0, 10);
 
-  // Загружаем все строки
+  // Получаем все строки
   const allRows = await fetchAllRowsMoexForts(fromStr, tillStr, 4);
 
-  // --- Для месячного графика (баров) ---
+  // --- Для месячного графика ---
+  const months = [];
+  for (let i = 0; i < monthCount + 12; ++i) {
+    const m = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push(m);
+  }
+
   const monthsData = [];
-  for (let i = 0; i < months.length - 1; ++i) {
-    const monthStart = months[i];
-    const nextMonthStart = months[i - 1] || new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  for (let i = 0; i < monthCount + 12; ++i) {
+    const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const nextMonthStart = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
     const from = monthStart.toISOString().slice(0, 10);
     const till = new Date(nextMonthStart - 1).toISOString().slice(0, 10);
-
-    const rows = allRows.filter(row =>
-        row[tradeDateIdx] >= from && row[tradeDateIdx] <= till
-    );
+    const rows = allRows.filter(r => r[tradeDateIdx] >= from && r[tradeDateIdx] <= till);
     if (!rows.length) {
       monthsData.unshift({
         month: monthStart.toLocaleString('ru-RU', { month: 'short', year: '2-digit' }),
@@ -79,39 +77,47 @@ export async function fetchMonthlyFundingWithCalendarRolling(monthCount = 12, ti
 
   const monthlyLast = monthsData.slice(-monthCount);
 
-  // --- Для дневного rolling-графика ---
-  const dailyData = [];
-  for (const row of allRows) {
-    const tradeDate = row[tradeDateIdx];
-    const settlePrice = row[settlePriceIdx];
-    const swapRate = row[swapRateIdx];
-    if (!settlePrice || !swapRate) continue;
-    const percent = (swapRate / settlePrice) * 100;
-    dailyData.push({ date: tradeDate, percent });
-  }
+  // --- Для скользящего графика по дням ---
+  const dailyData = allRows
+      .filter(r => r[settlePriceIdx] && r[swapRateIdx])
+      .map(r => ({
+        date: r[tradeDateIdx],
+        percent: (r[swapRateIdx] / r[settlePriceIdx]) * 100
+      }))
+      .sort((a, b) => a.date.localeCompare(b.date));
 
-  // Сортировка на всякий случай
-  dailyData.sort((a, b) => a.date.localeCompare(b.date));
-
-  // Скользящая сумма за 12 месяцев
   const rollingDaily = [];
-  const oneYearAgo = date => {
-    const d = new Date(date);
-    d.setFullYear(d.getFullYear() - 1);
-    return d.toISOString().slice(0, 10);
+  const dateMap = new Map(dailyData.map(d => [d.date, d.percent]));
+
+  const parseDate = s => new Date(s);
+  const formatDate = d => d.toISOString().slice(0, 10);
+  const subtractYear = d => {
+    const copy = new Date(d);
+    copy.setFullYear(copy.getFullYear() - 1);
+    return copy;
   };
 
-  for (let i = 0; i < dailyData.length; ++i) {
-    const currentDate = dailyData[i].date;
-    const startDate = oneYearAgo(currentDate);
+  for (let i = dailyData.length - 1; i >= 0; --i) {
+    const endDate = parseDate(dailyData[i].date);
+    const startDate = subtractYear(endDate);
+    const windowStart = formatDate(startDate);
+    const windowEnd = formatDate(endDate);
     const sum = dailyData
-        .filter(d => d.date >= startDate && d.date <= currentDate)
+        .filter(d => d.date >= windowStart && d.date <= windowEnd)
         .reduce((acc, d) => acc + d.percent, 0);
-    rollingDaily.push({
-      date: currentDate,
+    rollingDaily.unshift({
+      date: dailyData[i].date,
       yearSum: Number(sum.toFixed(3))
     });
+
+    // Ограничим по числу месяцев
+    const cutoffDate = new Date(now);
+    cutoffDate.setMonth(cutoffDate.getMonth() - monthCount);
+    if (endDate < cutoffDate) break;
   }
 
-  return { monthly: monthlyLast, rolling: rollingDaily };
+  return {
+    monthly: monthlyLast,
+    rolling: rollingDaily
+  };
 }
