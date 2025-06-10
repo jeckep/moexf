@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Месячный фандинг CNYRUBF (MOEX)</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background: #18181b; color: #fff; font-family: sans-serif; }
+        .wrapper { max-width: 600px; margin: 2em auto; background: #232336; padding: 2em; border-radius: 16px; }
+        h1 { font-size: 1.5em; text-align: center; }
+        .note { margin-top: 1em; font-size: 0.9em; color: #bbb; text-align: center; }
+        #spinner { text-align:center; padding: 1.5em 0; }
+        #controls { text-align:center; margin-bottom:1em; }
+        input[type="number"] { width:3em; padding:0.2em; border-radius:6px; border:none; background:#18181b; color:#fff; text-align:center; }
+        label { font-size:1em; color:#ccc; }
+        button { background: #4f46e5; color: #fff; border: none; border-radius: 8px; padding: 0.3em 1.5em; font-size: 1em; margin-left: 1em; cursor:pointer; }
+        button:active { background: #312e81; }
+        canvas { background: #232336; }
+    </style>
+</head>
+<body>
+<div class="wrapper">
+    <h1>Месячный фандинг<br><span style="font-size:0.8em;">CNYRUBF, MOEX</span></h1>
+    <div id="controls">
+        <label>Число месяцев:
+            <input id="monthCount" type="number" value="12" min="1" max="36" />
+        </label>
+        <button id="refresh">Показать</button>
+    </div>
+    <div id="spinner">Загрузка данных...</div>
+    <canvas id="fundingChart" height="300" style="display:none;"></canvas>
+    <div class="note">Положительное значение: лонги платят шортам.<br>Отрицательное: шорты платят лонгам.</div>
+</div>
+<script type="module">
+    import { fetchMonthlyFunding } from './index.js';
+
+    const chartElem = document.getElementById('fundingChart');
+    const spinner = document.getElementById('spinner');
+    const monthCountInput = document.getElementById('monthCount');
+    const refreshBtn = document.getElementById('refresh');
+    let chart;
+
+    async function renderChart() {
+        chartElem.style.display = 'none';
+        spinner.textContent = 'Загрузка данных...';
+        spinner.style.display = 'block';
+        try {
+            const months = Number(monthCountInput.value) || 12;
+            const monthly = await fetchMonthlyFunding(months);
+
+            const labels = monthly.map(m => m.month);
+            const percents = monthly.map(m => m.percent);
+
+            spinner.style.display = 'none';
+            chartElem.style.display = 'block';
+
+            if (chart) chart.destroy();
+            const ctx = chartElem.getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Фандинг, % за месяц',
+                        data: percents,
+                        backgroundColor: percents.map(v => v > 0 ? 'rgba(255, 99, 132, 0.7)' : 'rgba(54, 162, 235, 0.7)'),
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            grid: { color: '#333' },
+                            ticks: {
+                                color: '#fff',
+                                callback: value => value + '%'
+                            }
+                        },
+                        x: {
+                            grid: { color: '#232336' },
+                            ticks: { color: '#fff' }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => `Фандинг: ${ctx.parsed.y.toFixed(3)}%`
+                            }
+                        }
+                    }
+                }
+            });
+        } catch (err) {
+            spinner.textContent = 'Ошибка загрузки: ' + err;
+            chartElem.style.display = 'none';
+        }
+    }
+
+    refreshBtn.onclick = renderChart;
+    renderChart();
+</script>
+</body>
+</html>
