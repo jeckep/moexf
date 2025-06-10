@@ -1,61 +1,85 @@
-async function fetchMoexFundingStats() {
-  // 1. Получаем данные
-  const url = 'https://iss.moex.com/iss/history/engines/futures/markets/forts/securities/CNYRUBF.json?from=2025-01-01&till=2025-06-10';
-  const response = await fetch(url);
-  if (!response.ok) throw new Error('Ошибка загрузки данных MOEX');
-  const data = await response.json();
+async function fetchAllRowsCNYRUBF(from, till, chunkMonths = 4) {
+  // Разбиваем диапазон на куски по chunkMonths месяцев
+  let rows = [];
+  let currentFrom = new Date(from);
+  let tillDate = new Date(till);
+  while (currentFrom < tillDate) {
+    let currentTill = new Date(currentFrom);
+    currentTill.setMonth(currentTill.getMonth() + chunkMonths);
+    if (currentTill > tillDate) currentTill = tillDate;
+    const fStr = currentFrom.toISOString().slice(0, 10);
+    const tStr = currentTill.toISOString().slice(0, 10);
 
-  // 2. Достаем нужные массивы
-  const columns = data.history.columns;
-  const rows = data.history.data;
-
-  // 3. Индексы нужных колонок
-  const tradeDateIdx = columns.indexOf('TRADEDATE');
-  const swapRateIdx = columns.indexOf('SWAPRATE');
-  const settlePriceIdx = columns.indexOf('SETTLEPRICE');
-
-  // 4. Дата последней строки
-  const dates = rows.map(row => row[tradeDateIdx]);
-  const lastDate = new Date(dates[dates.length - 1]);
-
-  // 5. Группируем по месяцам
-  function isInLastNMonths(dateStr, months) {
-    const d = new Date(dateStr);
-    const cmp = new Date(lastDate);
-    cmp.setMonth(cmp.getMonth() - months);
-    return d > cmp;
-  }
-
-  // 6. Функция для подсчета по N месяцам
-  function sumFunding(months) {
-    let sum = 0, cnt = 0, firstSettlePrice = null;
-    for (let i = 0; i < rows.length; ++i) {
-      const row = rows[i];
-      const dateStr = row[tradeDateIdx];
-      if (isInLastNMonths(dateStr, months)) {
-        sum += row[swapRateIdx];
-        if (firstSettlePrice === null) firstSettlePrice = row[settlePriceIdx];
-        cnt++;
-      }
+    const url = `https://iss.moex.com/iss/history/engines/futures/markets/forts/securities/CNYRUBF.json?from=${fStr}&till=${tStr}`;
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error('Ошибка загрузки: ' + url);
+    const data = await resp.json();
+    if (data.history && data.history.data) {
+      rows.push(...data.history.data);
     }
-    // Берем цену первого дня из диапазона как базу для процентов (альтернативы ниже)
-    return {
-      sum,
-      basePrice: firstSettlePrice
-    };
+    // Следующий кусок
+    currentFrom = new Date(currentTill);
+    currentFrom.setDate(currentFrom.getDate() + 1); // чтобы не было наложений
   }
-
-  // 7. Считаем статистики для 1-7 месяцев
-  const result = [];
-  for (let m = 1; m <= 7; ++m) {
-    const {sum, basePrice} = sumFunding(m);
-    // Можно брать за базу среднюю цену или цену первого дня (обычно используют цену входа)
-    // Фандинг по сути дневной процент, т.е. процент за день. Сумма по диапазону — это накопленный процент.
-    const percent = (sum / basePrice) * 100;
-    result.push(Number(percent.toFixed(3))); // округляем для красоты
-  }
-  return result;
+  return rows;
 }
 
-fetchMoexFundingStats().then(console.log);
-// Пример вывода: [0.24, 0.51, ...] (фандинг в % за 1-7 месяцев)
+async function fetchFundingLastNMonths(n) {
+  // 1. Получаем колонки (разово, любой короткий запрос)
+  const sampleUrl = 'https://iss.moex.com/iss/history/engines/futures/markets/forts/securities/CNYRUBF.json?from=2025-01-01&till=2025-01-10';
+  const sampleResp = await fetch(sampleUrl);
+  const sampleData = await sampleResp.json();
+  const columns = sampleData.history.columns;
+  const tradeDateIdx = columns.indexOf('TRADEDATE');
+  const settlePriceIdx = columns.indexOf('SETTLEPRICE');
+  const swapRateIdx = columns.indexOf('SWAPRATE');
+
+  // 2. Формируем даты для выборки (сейчас — до сегодняшнего дня)
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const tillStr = now.toISOString().slice(0, 10);
+  const fromDate = new Date(now.getFullYear(), now.getMonth() - n + 1, 1);
+  const fromStr = fromDate.toISOString().slice(0, 10);
+
+  // 3. Получаем все строки за нужный диапазон короткими запросами (по 4 месяца)
+  const allRows = await fetchAllRowsCNYRUBF(fromStr, tillStr, 4);
+
+  // 4. Строим периоды для расчёта (кумулятивно — последний месяц, два, ... n)
+  const periods = [];
+  for (let i = 1; i <= n; ++i) {
+    const periodFrom = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+    periods.push({
+      from: periodFrom.toISOString().slice(0, 10),
+      till: tillStr
+    });
+  }
+
+  // 5. Считаем фандинг для каждого периода и печатаем результат
+  const results = [];
+  for (const {from, till} of periods) {
+    const rows = allRows.filter(row =>
+        row[tradeDateIdx] >= from && row[tradeDateIdx] <= till
+    );
+    if (!rows.length) {
+      console.log(`С ${from} по ${till} фандинг составил: 0% (нет данных)`);
+      results.push(0);
+      continue;
+    }
+    let sumSwap = 0;
+    let firstSettle = rows[0][settlePriceIdx];
+    for (const row of rows) {
+      sumSwap += row[swapRateIdx];
+    }
+    const percent = (sumSwap / firstSettle) * 100;
+    const direction = percent > 0 ? "Лонги платят шортам" : (percent < 0 ? "Шорты платят лонгам" : "Никто никому не платит");
+    console.log(`С ${from} по ${till} фандинг: ${percent.toFixed(3)}%. ${direction}`);
+
+    results.push(Number(percent.toFixed(3)));
+  }
+  return results;
+}
+
+// Запуск:
+fetchFundingLastNMonths(7).then(res => {
+  console.log('\nМассив фандинга по месяцам:', res);
+});
