@@ -106,7 +106,6 @@ export async function fetchMonthlyFundingWithCalendarRolling(monthCount = 12, ti
     const endDate = parseDate(dailyData[i].date);
     const startDate = subtractYear(endDate);
 
-    // Если начало окна выходит за рамки доступных данных — завершить
     if (startDate < oldest) break;
 
     const windowStart = formatDate(startDate);
@@ -122,8 +121,17 @@ export async function fetchMonthlyFundingWithCalendarRolling(monthCount = 12, ti
     });
   }
 
+  // --- Накопленный фандинг от текущего месяца назад ---
+  const cumulative = [];
+  let acc = 0;
+  for (let i = monthsData.length - 1; i >= 0; i--) {
+    acc += monthsData[i].percent;
+    cumulative.unshift(Number(acc.toFixed(3)));
+  }
+
   return {
     monthly: monthsData.slice(-monthCount),
-    rolling: rollingDaily
+    rolling: rollingDaily,
+    cumulative
   };
 }

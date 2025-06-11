@@ -51,6 +51,11 @@
         <button onclick="saveChart('rollingChart', 'rolling_funding')">Скачать годовой график</button>
     </div>
 
+    <canvas id="cumulativeChart" height="300" style="display:none;"></canvas>
+    <div class="save-buttons" id="saveCumulativeButtons" style="display:none;">
+        <button onclick="saveChart('cumulativeChart', 'cumulative_funding')">Скачать накопленный график</button>
+    </div>
+
     <div class="note">Положительное значение: лонги платят шортам.<br>Отрицательное: шорты платят лонгам.</div>
 </div>
 
@@ -59,14 +64,18 @@
 
     const chartElem = document.getElementById('fundingChart');
     const rollingElem = document.getElementById('rollingChart');
+    const cumulativeElem = document.getElementById('cumulativeChart');
+
     const spinner = document.getElementById('spinner');
     const monthCountInput = document.getElementById('monthCount');
     const tickerSelect = document.getElementById('ticker');
     const refreshBtn = document.getElementById('refresh');
+
     const saveFundingButtons = document.getElementById('saveFundingButtons');
     const saveRollingButtons = document.getElementById('saveRollingButtons');
+    const saveCumulativeButtons = document.getElementById('saveCumulativeButtons');
 
-    let chart, rollingChart;
+    let chart, rollingChart, cumulativeChart;
 
     const watermarkPlugin = {
         id: 'watermark',
@@ -85,19 +94,25 @@
     async function renderChart() {
         chartElem.style.display = 'none';
         rollingElem.style.display = 'none';
+        cumulativeElem.style.display = 'none';
+
         saveFundingButtons.style.display = 'none';
         saveRollingButtons.style.display = 'none';
+        saveCumulativeButtons.style.display = 'none';
+
         spinner.textContent = 'Загрузка данных...';
         spinner.style.display = 'block';
+
         try {
             const months = Number(monthCountInput.value) || 12;
             const ticker = tickerSelect.value;
             const tickerText = tickerSelect.options[tickerSelect.selectedIndex].text;
-            const { monthly, rolling } = await fetchMonthlyFundingWithCalendarRolling(months, ticker);
+            const { monthly, rolling, cumulative } = await fetchMonthlyFundingWithCalendarRolling(months, ticker);
 
             const labels = monthly.map(m => m.month);
             const percents = monthly.map(m => m.percent);
 
+            // --- График месячного фандинга ---
             if (chart) chart.destroy();
             chart = new Chart(chartElem.getContext('2d'), {
                 type: 'bar',
@@ -117,10 +132,7 @@
                             display: true,
                             text: `Месячный фандинг, % (${tickerText})`,
                             color: '#fff',
-                            font: {
-                                size: 20,
-                                weight: 'bold'
-                            },
+                            font: { size: 20, weight: 'bold' },
                             padding: { top: 10, bottom: 15 }
                         },
                         legend: { display: false },
@@ -144,6 +156,7 @@
                 plugins: [watermarkPlugin]
             });
 
+            // --- Годовой скользящий фандинг ---
             const rollingLabels = rolling.map(r => r.date);
             const rollingVals = rolling.map(r => r.yearSum);
 
@@ -169,10 +182,7 @@
                             display: true,
                             text: `Годовая скользящая сумма фандинга, % (${tickerText})`,
                             color: '#fff',
-                            font: {
-                                size: 20,
-                                weight: 'bold'
-                            },
+                            font: { size: 20, weight: 'bold' },
                             padding: { top: 10, bottom: 15 }
                         },
                         legend: { display: false },
@@ -196,16 +206,70 @@
                 plugins: [watermarkPlugin]
             });
 
+            // --- Накопленный фандинг ---
+            const cumulativeLabels = cumulative.map((_, i) => `${cumulative.length - i}`);
+
+            if (cumulativeChart) cumulativeChart.destroy();
+            cumulativeChart = new Chart(cumulativeElem.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: cumulativeLabels,
+                    datasets: [{
+                        label: 'Накопленный фандинг, %',
+                        data: cumulative,
+                        backgroundColor: 'rgba(255, 206, 86, 0.7)',
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: `Сколько вы бы заплатили, если держали позицию N месяцев (${tickerText})`,
+                            color: '#fff',
+                            font: { size: 20, weight: 'bold' },
+                            padding: { top: 10, bottom: 15 }
+                        },
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => `Фандинг за ${ctx.label} мес: ${ctx.parsed.y.toFixed(3)}%`
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            grid: { color: '#333' },
+                            ticks: { color: '#fff', callback: v => v + '%' }
+                        },
+                        x: {
+                            grid: { color: '#232336' },
+                            ticks: {
+                                color: '#fff',
+                                callback: (val, index) => `${cumulativeLabels[index]} мес`
+                            },
+                            reverse: false  // Явно указываем направление слева направо
+                        }
+                    }
+                },
+                plugins: [watermarkPlugin]
+            });
+
             spinner.style.display = 'none';
             chartElem.style.display = 'block';
             rollingElem.style.display = 'block';
+            cumulativeElem.style.display = 'block';
+
             saveFundingButtons.style.display = 'block';
             saveRollingButtons.style.display = 'block';
+            saveCumulativeButtons.style.display = 'block';
 
         } catch (err) {
             spinner.textContent = 'Ошибка загрузки: ' + err;
             chartElem.style.display = 'none';
             rollingElem.style.display = 'none';
+            cumulativeElem.style.display = 'none';
         }
     }
 
