@@ -19,6 +19,18 @@
         select { padding: 0.2em 0.7em; border-radius:6px; background:#18181b; color:#fff; border:none; }
         .save-buttons { text-align:center; margin-top: -1.2em; margin-bottom: 1.8em; }
         .save-buttons button { margin: 0.2em; }
+        .footer-links { text-align: center; margin-top: 2em; font-size: 1em; color: #bbb; }
+        .footer-links a { color: #4f46e5; text-decoration: none; margin: 0 0.5em; display: inline-block; }
+        .footer-links a:hover { text-decoration: underline; }
+        .telegram-icon {
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 0.4em;
+            width: 1em;
+            height: 1em;
+            background: url('https://cdn-icons-png.flaticon.com/512/2111/2111646.png') no-repeat center;
+            background-size: contain;
+        }
     </style>
 </head>
 <body>
@@ -57,6 +69,11 @@
     </div>
 
     <div class="note">Положительное значение: лонги платят шортам.<br>Отрицательное: шорты платят лонгам.</div>
+
+    <div class="footer-links">
+        <a href="https://t.me/t_calc" target="_blank"><span class="telegram-icon"></span>Телеграм-канал автора</a> |
+        <a href="https://t-calc.ru/" target="_blank">Полезные инструменты инвестора</a>
+    </div>
 </div>
 
 <script type="module">
@@ -112,7 +129,6 @@
             const labels = monthly.map(m => m.month);
             const percents = monthly.map(m => m.percent);
 
-            // --- График месячного фандинга ---
             if (chart) chart.destroy();
             chart = new Chart(chartElem.getContext('2d'), {
                 type: 'bar',
@@ -156,7 +172,6 @@
                 plugins: [watermarkPlugin]
             });
 
-            // --- Годовой скользящий фандинг ---
             const rollingLabels = rolling.map(r => r.date);
             const rollingVals = rolling.map(r => r.yearSum);
 
@@ -206,7 +221,6 @@
                 plugins: [watermarkPlugin]
             });
 
-            // --- Накопленный фандинг ---
             const cumulativeLabels = cumulative.map((_, i) => `${cumulative.length - i}`);
 
             if (cumulativeChart) cumulativeChart.destroy();
@@ -249,7 +263,7 @@
                                 color: '#fff',
                                 callback: (val, index) => `${cumulativeLabels[index]} мес`
                             },
-                            reverse: false  // Явно указываем направление слева направо
+                            reverse: false
                         }
                     }
                 },
