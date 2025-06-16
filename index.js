@@ -129,9 +129,17 @@ export async function fetchMonthlyFundingWithCalendarRolling(monthCount = 12, ti
     cumulative.unshift(Number(acc.toFixed(3)));
   }
 
+  // --- Дневной фандинг за последние 30 дней ---
+  const last30 = dailyData.slice(-30);
+  const dailyFunding = last30.map(d => ({
+    date: d.date,
+    percent: Number(d.percent.toFixed(3))
+  }));
+
   return {
     monthly: monthsData.slice(-monthCount),
     rolling: rollingDaily,
-    cumulative
+    cumulative,
+    daily: dailyFunding
   };
 }
