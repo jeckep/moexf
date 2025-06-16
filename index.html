@@ -31,6 +31,23 @@
             background: url('https://cdn-icons-png.flaticon.com/512/2111/2111646.png') no-repeat center;
             background-size: contain;
         }
+
+        .loader {
+            border: 4px solid #2e2e2e;
+            border-top: 4px solid #4f46e5;
+            border-radius: 50%;
+            width: 100px;
+            height: 100px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+
     </style>
 </head>
 <body>
@@ -52,7 +69,10 @@
         </label>
         <button id="refresh">Показать</button>
     </div>
-    <div id="spinner">Загрузка данных...</div>
+    <div id="spinner" style="display: block;">
+        <div class="loader"></div>
+        <div style="margin-top: 0.5em; font-size: 1.5em;">Загрузка данных...</div>
+    </div>
 
     <canvas id="fundingChart" height="300" style="display:none;"></canvas>
     <div class="save-buttons" id="saveFundingButtons" style="display:none;">
@@ -128,7 +148,6 @@
         saveCumulativeButtons.style.display = 'none';
         saveDailyButtons.style.display = 'none';
 
-        spinner.textContent = 'Загрузка данных...';
         spinner.style.display = 'block';
 
         try {
