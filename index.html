@@ -2,7 +2,22 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Месячный фандинг (MOEX)</title>
+    <title>Фандинг вечных фьючерсов: статистика, графики — MOEX Forts, USD, EUR, CNY</title>
+    <meta name="description" content="Актуальная и историческая статистика фандинга на вечных фьючерсах MOEX Forts (USDRUBF, EURRUBF, CNYRUBF, IMOEXF). Интерактивные графики, анализ фандинга за месяц и год.">
+    <meta name="keywords" content="вечные фьючерсы, статистика фандинга, funding, moex forts, usdrubf, eurubf, cnyrubf, фандинг вечных фьючерсов, funding perpetual futures">
+
+    <meta property="og:title" content="Фандинг вечных фьючерсов на MOEX">
+    <meta property="og:description" content="Графики и статистика фандинга вечных фьючерсов на Мосбирже. USDRUBF, EURRUBF, CNYRUBF.">
+    <meta property="og:url" content="https://jeckep.github.io/moexf/">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://jeckep.github.io/moexf/moexf-preview.png"> <!-- создайте подходящую картинку! -->
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Фандинг вечных фьючерсов на MOEX">
+    <meta name="twitter:description" content="Графики фандинга вечных фьючерсов. Актуальные и исторические данные.">
+    <meta name="twitter:image" content="https://jeckep.github.io/moexf/moexf-preview.png">
+    <meta name="geo.region" content="RU">
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { background: #18181b; color: #fff; font-family: sans-serif; }
@@ -52,7 +67,7 @@
 </head>
 <body>
 <div class="wrapper">
-    <h1>Месячный и годовой фандинг<br><span style="font-size:0.8em;">MOEX Forts</span></h1>
+    <h1>Фандинг вечных фьючерсов на MOEX: статистика и графики</h1>
     <div id="controls">
         <label>
             Фьючерс:
@@ -96,6 +111,27 @@
     </div>
 
     <div class="note">Положительное значение: лонги платят шортам.<br>Отрицательное: шорты платят лонгам.</div>
+
+    <section style="margin-top:2em; background:#232336; border-radius:14px; padding:1.2em;">
+        <h2>Что такое фандинг вечных фьючерсов?</h2>
+        <p>
+            Вечные фьючерсы (perpetual futures) — это биржевые инструменты, не имеющие даты экспирации.
+            Фандинг — регулярные выплаты между участниками (лонги ↔ шорты), позволяющие цене фьючерса совпадать с базовым активом.
+            На MOEX Forts доступны фьючерсы USDRUBF, EURRUBF, CNYRUBF, IMOEXF.
+            На этой странице вы найдете интерактивные графики по фандингу вечных фьючерсов за месяц и за год, сможете сравнить статистику по разным инструментам.
+        </p>
+        <h2>Как считается фандинг?</h2>
+        <p>
+            Фандинг рассчитывается ежедневно и выплачивается между держателями длинных (лонг) и коротких (шорт) позиций.
+            Если значение положительное — лонги платят шортам, если отрицательное — наоборот.
+        </p>
+        <h2>Зачем следить за фандингом?</h2>
+        <p>
+            Фандинг существенно влияет на итоговую доходность при долгосрочном удержании позиции.
+            Актуальные и исторические данные по фандингу помогут выбрать наиболее выгодную стратегию торговли или инвестирования на срочном рынке.
+        </p>
+    </section>
+
 
     <div class="footer-links">
         <a href="https://t.me/t_calc" target="_blank"><span class="telegram-icon"></span>Телеграм-канал автора</a> |
