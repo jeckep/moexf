@@ -2,8 +2,8 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Фандинг вечных фьючерсов: статистика, графики — MOEX Forts, USD, EUR, CNY</title>
-    <meta name="description" content="Актуальная и историческая статистика фандинга на вечных фьючерсах MOEX Forts (USDRUBF, EURRUBF, CNYRUBF, IMOEXF). Интерактивные графики, анализ фандинга за месяц и год.">
+    <title>Фандинг вечных фьючерсов: статистика, графики — MOEX Forts, USD, EUR, CNY, GLD</title>
+    <meta name="description" content="Актуальная и историческая статистика фандинга на вечных фьючерсах MOEX Forts (USDRUBF, EURRUBF, CNYRUBF, IMOEXF, GLDRUBF). Интерактивные графики, анализ фандинга за месяц и год.">
     <meta name="keywords" content="вечные фьючерсы, статистика фандинга, funding, moex forts, usdrubf, eurubf, cnyrubf, фандинг вечных фьючерсов, funding perpetual futures">
 
     <meta property="og:title" content="Фандинг вечных фьючерсов на MOEX">
@@ -76,6 +76,7 @@
                 <option value="USDRUBF">USDRUBF</option>
                 <option value="EURRUBF">EURRUBF</option>
                 <option value="IMOEXF">IMOEXF</option>
+                <option value="GLDRUBF">GLDRUBF</option>
             </select>
         </label>
         <label style="margin-left:1em;">
@@ -110,7 +111,9 @@
         <button onclick="saveChart('dailyChart', 'daily_funding')">Скачать дневной график</button>
     </div>
 
-    <div class="note">Положительное значение: лонги платят шортам.<br>Отрицательное: шорты платят лонгам.</div>
+    <div class="note">Положительное значение: лонги платят шортам.<br>Отрицательное: шорты платят лонгам.
+        <br>На всех графиках % это процент от позиции (а не от ГО)!!!
+    </div>
 
     <section style="margin-top:2em; background:#232336; border-radius:14px; padding:1.2em;">
         <h2>Что такое фандинг вечных фьючерсов?</h2>
