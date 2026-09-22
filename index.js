@@ -1,3 +1,12 @@
+// Вечные фьючерсы, котируемые в долларах: SETTLEPRICE в USD, а SWAPRATE — в рублях,
+// поэтому долю от позиции считаем только после приведения цены к рублям по курсу дня.
+const USD_QUOTED = new Set([
+  'SP500F', 'QQQF',
+  'AMDF', 'AMZNF', 'APPF', 'BSXF', 'CMGF', 'COHRF', 'COINF', 'CRWDF', 'CVNAF', 'DASHF',
+  'HOODF', 'LITEF', 'LULUF', 'NBISF', 'NFLXF', 'PANWF', 'SMCIF', 'SNDKF', 'TSLAF', 'UBERF',
+  'BTCUSDF', 'ETHUSDF', 'SOLUSDF', 'TRXUSDF', 'XRPUSDF'
+]);
+
 export async function fetchMonthlyFundingWithCalendarRolling(monthCount = 12, ticker = 'CNYRUBF') {
   async function fetchAllRowsMoexFortsBackwards(ticker, maxMonthsBack = 60, chunkMonths = 4) {
     const now = new Date();
@@ -29,6 +38,25 @@ export async function fetchMonthlyFundingWithCalendarRolling(monthCount = 12, ti
     return { rows, oldestDate };
   }
 
+  // Settle-цена USDRUBF совпадает с фиксингом MOEX USDFIXME до сотых,
+  // но достаётся тем же запросом, что и остальные данные.
+  async function fetchUsdRubByDate(fromStr, tillStr) {
+    const url = `https://iss.moex.com/iss/history/engines/futures/markets/forts/securities/USDRUBF.json?from=${fromStr}&till=${tillStr}`;
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error('не удалось загрузить курс USD/RUB');
+
+    const data = await resp.json();
+    const cols = data.history.columns;
+    const dateIdx = cols.indexOf('TRADEDATE');
+    const priceIdx = cols.indexOf('SETTLEPRICE');
+
+    const rates = new Map();
+    for (const row of data.history.data) {
+      if (row[priceIdx]) rates.set(row[dateIdx], row[priceIdx]);
+    }
+    return rates;
+  }
+
   // Индексы столбцов
   const sampleUrl = `https://iss.moex.com/iss/history/engines/futures/markets/forts/securities/${ticker}.json?from=2025-01-01&till=2025-01-10`;
   const sampleResp = await fetch(sampleUrl);
@@ -46,15 +74,31 @@ export async function fetchMonthlyFundingWithCalendarRolling(monthCount = 12, ti
   const oldest = new Date(oldestDate);
   oldest.setHours(0, 0, 0, 0);
 
+  if (USD_QUOTED.has(ticker) && allRows.length) {
+    const rates = await fetchUsdRubByDate(oldestDate, now.toISOString().slice(0, 10));
+    const known = [...rates.keys()].sort();
+    if (!known.length) throw new Error('нет данных по курсу USD/RUB');
+
+    // allRows идут от старых к новым: у долларовых контрактов есть сессия выходного дня,
+    // курса за такой день нет — тянем последний известный.
+    let rate = rates.get(known[0]);
+    for (const row of allRows) {
+      rate = rates.get(row[tradeDateIdx]) ?? rate;
+      if (row[settlePriceIdx]) row[settlePriceIdx] *= rate;
+    }
+  }
+
   // --- Месячный фандинг ---
   const startDateMonthly = new Date(now);
   startDateMonthly.setMonth(now.getMonth() - monthCount);
   const actualStartDate = oldest > startDateMonthly ? oldest : startDateMonthly;
+  // Тикер мог начать торговаться в середине месяца — иначе этот месяц выпадает из выборки.
+  const actualStartMonth = new Date(actualStartDate.getFullYear(), actualStartDate.getMonth(), 1);
 
   const monthsData = [];
   let current = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  while (current >= actualStartDate) {
+  while (current >= actualStartMonth) {
     const monthStart = new Date(current);
     const nextMonthStart = new Date(current);
     nextMonthStart.setMonth(nextMonthStart.getMonth() + 1);

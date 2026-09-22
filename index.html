@@ -2,12 +2,12 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Фандинг вечных фьючерсов: статистика, графики — MOEX Forts, USD, EUR, CNY, GLD</title>
-    <meta name="description" content="Актуальная и историческая статистика фандинга на вечных фьючерсах MOEX Forts (USDRUBF, EURRUBF, CNYRUBF, IMOEXF, GLDRUBF). Интерактивные графики, анализ фандинга за месяц и год.">
-    <meta name="keywords" content="вечные фьючерсы, статистика фандинга, funding, moex forts, usdrubf, eurubf, cnyrubf, фандинг вечных фьючерсов, funding perpetual futures">
+    <title>Фандинг вечных фьючерсов: статистика, графики — MOEX Forts, валюта, акции, S&amp;P 500, крипта</title>
+    <meta name="description" content="Актуальная и историческая статистика фандинга по всем вечным фьючерсам MOEX Forts: USDRUBF, EURRUBF, CNYRUBF, IMOEXF, RGBIF, GLDRUBF, SLVRUBF, SBERF, GAZPF, SP500F, QQQF, TSLAF, BTCUSDF и другим. Интерактивные графики, анализ фандинга за месяц и год.">
+    <meta name="keywords" content="вечные фьючерсы, статистика фандинга, funding, moex forts, usdrubf, eurubf, cnyrubf, sp500f, qqqf, sberf, gazpf, gldrubf, slvrubf, btcusdf, фандинг вечных фьючерсов, funding perpetual futures">
 
     <meta property="og:title" content="Фандинг вечных фьючерсов на MOEX">
-    <meta property="og:description" content="Графики и статистика фандинга вечных фьючерсов на Мосбирже. USDRUBF, EURRUBF, CNYRUBF.">
+    <meta property="og:description" content="Графики и статистика фандинга вечных фьючерсов на Мосбирже: валюта, металлы, индексы, акции РФ и США, крипта.">
     <meta property="og:url" content="https://jeckep.github.io/moexf/">
     <meta property="og:type" content="website">
     <meta property="og:image" content="https://jeckep.github.io/moexf/moexf-preview.png"> <!-- создайте подходящую картинку! -->
@@ -72,11 +72,56 @@
         <label>
             Фьючерс:
             <select id="ticker">
-                <option value="CNYRUBF">CNYRUBF</option>
-                <option value="USDRUBF">USDRUBF</option>
-                <option value="EURRUBF">EURRUBF</option>
-                <option value="IMOEXF">IMOEXF</option>
-                <option value="GLDRUBF">GLDRUBF</option>
+                <optgroup label="Валюта">
+                    <option value="CNYRUBF">CNYRUBF — юань</option>
+                    <option value="USDRUBF">USDRUBF — доллар</option>
+                    <option value="EURRUBF">EURRUBF — евро</option>
+                </optgroup>
+                <optgroup label="Индексы РФ">
+                    <option value="IMOEXF">IMOEXF — индекс МосБиржи</option>
+                    <option value="RGBIF">RGBIF — индекс гособлигаций</option>
+                </optgroup>
+                <optgroup label="Металлы">
+                    <option value="GLDRUBF">GLDRUBF — золото</option>
+                    <option value="SLVRUBF">SLVRUBF — серебро</option>
+                </optgroup>
+                <optgroup label="Акции РФ">
+                    <option value="SBERF">SBERF — Сбербанк</option>
+                    <option value="GAZPF">GAZPF — Газпром</option>
+                </optgroup>
+                <optgroup label="Индексы США">
+                    <option value="SP500F">SP500F — S&amp;P 500 (SPY ETF)</option>
+                    <option value="QQQF">QQQF — Nasdaq 100 (QQQ ETF)</option>
+                </optgroup>
+                <optgroup label="Акции США">
+                    <option value="AMDF">AMDF — AMD</option>
+                    <option value="AMZNF">AMZNF — Amazon</option>
+                    <option value="APPF">APPF — AppLovin</option>
+                    <option value="BSXF">BSXF — Boston Scientific</option>
+                    <option value="CMGF">CMGF — Chipotle</option>
+                    <option value="COHRF">COHRF — Coherent</option>
+                    <option value="COINF">COINF — Coinbase</option>
+                    <option value="CRWDF">CRWDF — CrowdStrike</option>
+                    <option value="CVNAF">CVNAF — Carvana</option>
+                    <option value="DASHF">DASHF — DoorDash</option>
+                    <option value="HOODF">HOODF — Robinhood</option>
+                    <option value="LITEF">LITEF — Lumentum</option>
+                    <option value="LULUF">LULUF — Lululemon</option>
+                    <option value="NBISF">NBISF — Nebius</option>
+                    <option value="NFLXF">NFLXF — Netflix</option>
+                    <option value="PANWF">PANWF — Palo Alto Networks</option>
+                    <option value="SMCIF">SMCIF — Super Micro</option>
+                    <option value="SNDKF">SNDKF — SanDisk</option>
+                    <option value="TSLAF">TSLAF — Tesla</option>
+                    <option value="UBERF">UBERF — Uber</option>
+                </optgroup>
+                <optgroup label="Криптовалюты">
+                    <option value="BTCUSDF">BTCUSDF — биткоин</option>
+                    <option value="ETHUSDF">ETHUSDF — эфир</option>
+                    <option value="SOLUSDF">SOLUSDF — солана</option>
+                    <option value="TRXUSDF">TRXUSDF — трон</option>
+                    <option value="XRPUSDF">XRPUSDF — рипл</option>
+                </optgroup>
             </select>
         </label>
         <label style="margin-left:1em;">
@@ -89,6 +134,9 @@
         <div class="loader"></div>
         <div style="margin-top: 0.5em; font-size: 1.5em;">Загрузка данных...</div>
     </div>
+    <div class="note" id="noDataNotice" style="display:none;">
+        По этому контракту на MOEX ещё нет истории фандинга — он начал торговаться слишком недавно.
+    </div>
 
     <canvas id="fundingChart" height="300" style="display:none;"></canvas>
     <div class="save-buttons" id="saveFundingButtons" style="display:none;">
@@ -98,6 +146,9 @@
     <canvas id="rollingChart" height="280" style="display:none;"></canvas>
     <div class="save-buttons" id="saveRollingButtons" style="display:none;">
         <button onclick="saveChart('rollingChart', 'rolling_funding')">Скачать годовой график</button>
+    </div>
+    <div class="note" id="rollingNotice" style="display:none;">
+        Годовая скользящая сумма не построена: у контракта меньше года истории.
     </div>
 
     <canvas id="cumulativeChart" height="300" style="display:none;"></canvas>
@@ -120,7 +171,9 @@
         <p>
             Вечные фьючерсы (perpetual futures) — это биржевые инструменты, не имеющие даты экспирации.
             Фандинг — регулярные выплаты между участниками (лонги ↔ шорты), позволяющие цене фьючерса совпадать с базовым активом.
-            На MOEX Forts доступны фьючерсы USDRUBF, EURRUBF, CNYRUBF, IMOEXF.
+            На MOEX Forts вечные фьючерсы есть на валюту (USDRUBF, EURRUBF, CNYRUBF), индексы (IMOEXF, RGBIF),
+            металлы (GLDRUBF, SLVRUBF), акции РФ (SBERF, GAZPF), акции и индексы США (SP500F, QQQF, TSLAF, NFLXF и другие)
+            и криптовалюты (BTCUSDF, ETHUSDF и другие).
             На этой странице вы найдете интерактивные графики по фандингу вечных фьючерсов за месяц и за год, сможете сравнить статистику по разным инструментам.
         </p>
         <h2>Как считается фандинг?</h2>
@@ -160,6 +213,9 @@
     const saveCumulativeButtons = document.getElementById('saveCumulativeButtons');
     const saveDailyButtons = document.getElementById('saveDailyButtons');
 
+    const rollingNotice = document.getElementById('rollingNotice');
+    const noDataNotice = document.getElementById('noDataNotice');
+
     let chart, rollingChart, cumulativeChart, dailyChart;
 
     const watermarkPlugin = {
@@ -187,13 +243,22 @@
         saveCumulativeButtons.style.display = 'none';
         saveDailyButtons.style.display = 'none';
 
+        rollingNotice.style.display = 'none';
+        noDataNotice.style.display = 'none';
+
         spinner.style.display = 'block';
 
         try {
             const months = Number(monthCountInput.value) || 12;
             const ticker = tickerSelect.value;
-            const tickerText = tickerSelect.options[tickerSelect.selectedIndex].text;
+            const tickerText = ticker;
             const { monthly, rolling, cumulative, daily } = await fetchMonthlyFundingWithCalendarRolling(months, ticker);
+
+            if (!daily.length) {
+                spinner.style.display = 'none';
+                noDataNotice.style.display = 'block';
+                return;
+            }
 
             // Месячный график
             const labels = monthly.map(m => m.month);
@@ -231,7 +296,7 @@
                     scales: {
                         y: {
                             grid: { color: '#333' },
-                            ticks: { color: '#fff', callback: v => v + '%' }
+                            ticks: { color: '#fff', callback: v => Number(v.toFixed(3)) + '%' }
                         },
                         x: {
                             grid: { color: '#232336' },
@@ -247,7 +312,7 @@
             const rollingVals = rolling.map(r => r.yearSum);
 
             if (rollingChart) rollingChart.destroy();
-            rollingChart = new Chart(rollingElem.getContext('2d'), {
+            rollingChart = rolling.length ? new Chart(rollingElem.getContext('2d'), {
                 type: 'line',
                 data: {
                     labels: rollingLabels,
@@ -281,7 +346,7 @@
                     scales: {
                         y: {
                             grid: { color: '#333' },
-                            ticks: { color: '#fff', callback: v => v + '%' }
+                            ticks: { color: '#fff', callback: v => Number(v.toFixed(3)) + '%' }
                         },
                         x: {
                             grid: { color: '#232336' },
@@ -290,7 +355,7 @@
                     }
                 },
                 plugins: [watermarkPlugin]
-            });
+            }) : null;
 
             // Накопленный фандинг
             const cumulativeLabels = cumulative.map((_, i) => `${cumulative.length - i}`);
@@ -327,7 +392,7 @@
                     scales: {
                         y: {
                             grid: { color: '#333' },
-                            ticks: { color: '#fff', callback: v => v + '%' }
+                            ticks: { color: '#fff', callback: v => Number(v.toFixed(3)) + '%' }
                         },
                         x: {
                             grid: { color: '#232336' },
@@ -378,7 +443,7 @@
                     scales: {
                         y: {
                             grid: { color: '#333' },
-                            ticks: { color: '#fff', callback: v => v + '%' }
+                            ticks: { color: '#fff', callback: v => Number(v.toFixed(3)) + '%' }
                         },
                         x: {
                             grid: { color: '#232336' },
@@ -391,14 +456,16 @@
 
             spinner.style.display = 'none';
             chartElem.style.display = 'block';
-            rollingElem.style.display = 'block';
             cumulativeElem.style.display = 'block';
             dailyElem.style.display = 'block';
 
             saveFundingButtons.style.display = 'block';
-            saveRollingButtons.style.display = 'block';
             saveCumulativeButtons.style.display = 'block';
             saveDailyButtons.style.display = 'block';
+
+            rollingElem.style.display = rolling.length ? 'block' : 'none';
+            saveRollingButtons.style.display = rolling.length ? 'block' : 'none';
+            rollingNotice.style.display = rolling.length ? 'none' : 'block';
 
         } catch (err) {
             spinner.textContent = 'Ошибка загрузки: ' + err;
