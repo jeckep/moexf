@@ -1,5 +1,5 @@
 // Вечные фьючерсы, котируемые в долларах: SETTLEPRICE в USD, а SWAPRATE — в рублях,
-// поэтому долю от позиции считаем только после приведения цены к рублям по курсу дня.
+// поэтому долю от позиции считаем только после приведения цены к рублям.
 const USD_QUOTED = new Set([
   'SP500F', 'QQQF',
   'AMDF', 'AMZNF', 'APPF', 'BSXF', 'CMGF', 'COHRF', 'COINF', 'CRWDF', 'CVNAF', 'DASHF',
@@ -38,23 +38,30 @@ export async function fetchMonthlyFundingWithCalendarRolling(monthCount = 12, ti
     return { rows, oldestDate };
   }
 
-  // Settle-цена USDRUBF совпадает с фиксингом MOEX USDFIXME до сотых,
-  // но достаётся тем же запросом, что и остальные данные.
-  async function fetchUsdRubByDate(fromStr, tillStr) {
-    const url = `https://iss.moex.com/iss/history/engines/futures/markets/forts/securities/USDRUBF.json?from=${fromStr}&till=${tillStr}`;
-    const resp = await fetch(url);
-    if (!resp.ok) throw new Error('не удалось загрузить курс USD/RUB');
-
-    const data = await resp.json();
-    const cols = data.history.columns;
-    const dateIdx = cols.indexOf('TRADEDATE');
-    const priceIdx = cols.indexOf('SETTLEPRICE');
-
+  // В клиринг MOEX пересчитывает фандинг по курсу доллара, установленному в этот день
+  // на следующий, — это фиксинг USDFIXME (https://www.moex.com/a9365). Сходится с
+  // OPENPOSITIONVALUE / OPENPOSITION / SETTLEPRICE по долларовым контрактам до 1e-5 %.
+  async function fetchUsdFixingByDate(fromStr, tillStr) {
+    const pageSize = 100; // ISS отдаёт историю страницами по 100 строк
     const rates = new Map();
-    for (const row of data.history.data) {
-      if (row[priceIdx]) rates.set(row[dateIdx], row[priceIdx]);
+
+    for (let start = 0; ; start += pageSize) {
+      const url = `https://iss.moex.com/iss/history/engines/currency/markets/index/securities/USDFIXME.json?from=${fromStr}&till=${tillStr}&start=${start}`;
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error('не удалось загрузить фиксинг USD/RUB');
+
+      const data = await resp.json();
+      const cols = data.history.columns;
+      const dateIdx = cols.indexOf('TRADEDATE');
+      const closeIdx = cols.indexOf('CLOSE');
+      const chunk = data.history.data;
+
+      for (const row of chunk) {
+        if (row[closeIdx]) rates.set(row[dateIdx], row[closeIdx]);
+      }
+
+      if (chunk.length < pageSize) return rates;
     }
-    return rates;
   }
 
   // Индексы столбцов
@@ -75,12 +82,12 @@ export async function fetchMonthlyFundingWithCalendarRolling(monthCount = 12, ti
   oldest.setHours(0, 0, 0, 0);
 
   if (USD_QUOTED.has(ticker) && allRows.length) {
-    const rates = await fetchUsdRubByDate(oldestDate, now.toISOString().slice(0, 10));
+    const rates = await fetchUsdFixingByDate(oldestDate, now.toISOString().slice(0, 10));
     const known = [...rates.keys()].sort();
-    if (!known.length) throw new Error('нет данных по курсу USD/RUB');
+    if (!known.length) throw new Error('нет данных по фиксингу USD/RUB');
 
     // allRows идут от старых к новым: у долларовых контрактов есть сессия выходного дня,
-    // курса за такой день нет — тянем последний известный.
+    // фиксинга за такой день нет — тянем последний известный.
     let rate = rates.get(known[0]);
     for (const row of allRows) {
       rate = rates.get(row[tradeDateIdx]) ?? rate;
